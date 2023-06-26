@@ -2,7 +2,7 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    aws_region: "us-east-1"
+    aws_region: "us-west-1"
     account_ids:
       - "031617398730"
       - "169046219868"
