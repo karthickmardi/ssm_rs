@@ -29,7 +29,7 @@
         instance_ids=$(aws ec2 describe-instances --region "{{ region }}" --query 'Reservations[].Instances[].InstanceId' --output text)
 
         # Define the output file path
-        output_file="/home/ec2-user/ssm/ssm_rs/patch_report"
+        output_file="/home/ec2-user/ansible/ssm/ssm_rs/patch_report"
 
         # Print table header
         printf "+-----------------+-------------------------+---------------+---------------+--------------------+----------+-------------------------+---------------+--------------------+--------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+\n" > "$output_file"
@@ -65,4 +65,4 @@
 
     - name: Display Patch Report
       debug:
-        msg: "Patch report: {{ lookup('file', '/home/ec2-user/ssm/ssm_rs/patch_report') }}"
+        msg: "Patch report: {{ lookup('file', '/home/ec2-user/ansible/ssm/ssm_rs/patch_report') }}"
