@@ -1,7 +1,7 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    region: "us-west-2"  # Change to the desired region
+    region: "us-west-2"  # Change to desired region
 
   tasks:
     - name: Assume AWS role and retrieve temporary credentials
@@ -29,11 +29,11 @@
         instance_ids=$(aws ec2 describe-instances --region "{{ region }}" --query 'Reservations[].Instances[].InstanceId' --output text)
 
         # Define the output file path
-        output_file="/home/ec2-user/ansible/ssm/ssm_rs/patch_report"
+        output_file="/home/ec2-user/ssm/ssm_rs/patch_report"
 
         # Print table header
         printf "+-----------------+-------------------------+---------------+---------------+--------------------+----------+-------------------------+---------------+--------------------+--------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+\n" > "$output_file"
-        printf "|%-17s|%-25s|%-15s|%-15s|%-20s|%-10s|%-25s|%-15s|%-20s|%-20s|%-30s|%-30s|%-30s|%-30s|%-30s|%-30s|\n" "Instance ID" "Instance Name" "Instance IP" "Platform Name" "Platform Version" "SSM Version" "Patch Baseline" "Patch Group" "Compliance Status" "Compliance Severity" "Noncompliant Critical Count" "Noncompliant High Count" "Noncompliant Medium Count" "Noncompliant Low Count" "Noncompliant Informational Count" "Noncompliant Unspecified Count" >> "$output_file"
+        printf "|%-17s|%-25s|%-15s|%-15s|%-20s|%-10s|%-25s|%-15s|%-20s|%-20s|%-30s|%-30s|%-30s|%-30s|%-30s|%-30s|%-30s|\n" "Instance ID" "Instance Name" "Instance IP" "Platform Name" "Platform Version" "SSM Version" "Patch Baseline" "Patch Group" "Compliance Status" "Compliance Severity" "Noncompliant Critical Count" "Noncompliant High Count" "Noncompliant Medium Count" "Noncompliant Low Count" "Noncompliant Informational Count" "Noncompliant Unspecified Count" >> "$output_file"
         printf "+-----------------+-------------------------+---------------+---------------+--------------------+----------+-------------------------+---------------+--------------------+--------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+\n" >> "$output_file"
 
         # Iterate over each instance and retrieve data
@@ -60,20 +60,9 @@
           noncompliant_unspecified_count=$(aws ssm describe-instance-patch-states --region "{{ region }}" --instance-id $instance_id --query 'InstancePatchStates[0].NonCompliantUnspecifiedCount' --output text)
 
           # Print instance data in the table format
-          printf "|%-17s|%-25s|%-15s|%-15s|%-20s|%-10s|%-25s|%-15s|%-20s|%-20s|%-30s|%-30s|%-30s|%-30s|%-30s|%-30s|\n" "$instance_id" "$instance_name" "$instance_ip" "$platform_name" "$platform_version" "$ssm_version" "$patch_baseline" "$patch_group" "$compliance_status" "$compliance_severity" "$noncompliant_critical_count" "$noncompliant_high_count" "$noncompliant_medium_count" "$noncompliant_low_count" "$noncompliant_informational_count" "$noncompliant_unspecified_count" >> "$output_file"
+          printf "|%-17s|%-25s|%-15s|%-15s|%-20s|%-10s|%-25s|%-15s|%-20s|%-20s|%-30s|%-30s|%-30s|%-30s|%-30s|%-30s|%-30s|\n" "$instance_id" "$instance_name" "$instance_ip" "$platform_name" "$platform_version" "$ssm_version" "$patch_baseline" "$patch_group" "$compliance_status" "$compliance_severity" "$noncompliant_critical_count" "$noncompliant_high_count" "$noncompliant_medium_count" "$noncompliant_low_count" "$noncompliant_informational_count" "$noncompliant_unspecified_count" >> "$output_file"
         done
-
-        # Check compliance status
-        if grep -q "NON_COMPLIANT" "$output_file"; then
-          compliance_status="NON_COMPLIANT"
-        else
-          compliance_status="COMPLIANT"
-        fi
-
-        echo "Compliance Status: $compliance_status"
-
-      register: patch_report_output
 
     - name: Display Patch Report
       debug:
-        var: patch_report_output.stdout_lines
+        msg: "Patch report: {{ lookup('file', '/home/ec2-user/ssm/ssm_rs/patch_report') }}"
