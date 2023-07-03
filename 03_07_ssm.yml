@@ -1,49 +1,48 @@
+---
 - hosts: localhost
   gather_facts: no
   vars:
     region: "us-west-2"  # Change to desired region
     account_ids:
-      - "cni-atos-bhepdev/714949071610"
+      - "714949071610"
       - "974553378902"
-      - "cni-atos-step-dev/442868247538"
-      - "cni-atos-step-st1 :prod/170447404153"
-      - "cni-atos-sapdev/031673727321"
+      - "442868247538"
+      - "170447404153"
+      - "031673727321"
       - "31617398730"
-      - "cni-atos-sapnonprod/031617398730"
+      - "031617398730"
       - "31673727321"
-      - "cni-atos-sapprod/169046219868"
-      - "cni-atos-sapnonprod/31617398730"
-      - "cni-atos-sapprod"
+      - "169046219868"
+      - "31617398730"
       - "937063455937"
       - "166298870680"
-      - "cni-atos-sapsatnonprod/483719991250"
+      - "483719991250"
       - "732731544555"
-      - "wwp1euirw1b00"
-      - "cni-atos-bheppreprod/652663885333"
-      - "cni-atos-bhepprod/693712092035"
-      - "cni-atos-tooling :prod/580154993495"
-      - "cni-atos-hamilton :prod/937063455937"
+      - "652663885333"
+      - "693712092035"
+      - "580154993495"
+      - "937063455937"
       - "604461992924"
-      - "cni-atos-twtkey-dev/268474242392"
-      - "cni-atos-twtkey-nonprod /685322773649"
-      - "cni-atos-bheptest"
+      - "268474242392"
+      - "685322773649"
       - "285019557821"
-      - "cni-atos-sapnonprod"
-      - "cni-dc-apps-prod/735591518475"
-      - "cni-dc-apps-nonprod/219184608383"
-      - "cni-dc-apps-dev/017106239768"
-      - "aws_account:cni-dc-infra 812909588178"
-      - "cni-dc-ecom-dev/797893049957"
-      - "cni-dc-ecom-nonprod/795426212312"
-      - "031673727321-cni-atos-sapdev"
-      - "31617398730-cni-atos-sapnonprod"
-      - "169046219868-cni-atos-sapprod"
-      - "CNI-DC-ECOM-NON PROD-795426212312"
-      - "cni-dc-infra-812909588178"
-      - "cni-dc-apps-prod-735591518475"
-      - "cni-dc-apps-nonprod-219184608383"
-      - "CNI-EMKTS-PROD (896335907500)"
-      - "CNI-EMKTS-NONPROD (488057793750)"
+      - "735591518475"
+      - "219184608383"
+      - "017106239768"
+      - "812909588178"
+      - "797893049957"
+      - "795426212312"
+      - "031673727321"
+      - "31617398730"
+      - "169046219868"
+      - "795426212312"
+      - "812909588178"
+      - "735591518475"
+      - "219184608383"
+      - "896335907500"
+      - "488057793750"
+      
+      # Add more account IDs here
 
   tasks:
     - name: Assume AWS role and retrieve temporary credentials
@@ -59,7 +58,7 @@
         aws_secret_access_key: "{{ assume_role_output.stdout | from_json | json_query('Credentials.SecretAccessKey') }}"
         aws_session_token: "{{ assume_role_output.stdout | from_json | json_query('Credentials.SessionToken') }}"
 
-    - name: Get Patch Report
+    - name: Get Patch Report for each account
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
@@ -67,12 +66,17 @@
       shell: |
         #!/bin/bash
 
-        # Get the instances with SSM patch compliance data
-        for account_id in "{{ account_ids }}"; do
+        account_ids=({{ account_ids | join(' ') }})
+
+        # Iterate over each account ID
+        for account_id in "${account_ids[@]}"; do
+          echo "Processing account: $account_id"
+
+          # Get the instances with SSM patch compliance data
           instance_ids=$(aws ec2 describe-instances --region "{{ region }}" --query 'Reservations[].Instances[].InstanceId' --output text --profile "$account_id")
 
           # Define the output file path
-          output_file="/home/ec2-user/ssm/ssm_rs/patch_report_${account_id}"
+          output_file="/home/ec2-user/ssm/ansible/ssm_rs/patch_report_${account_id}"
 
           # Print table header
           printf "+-----------------+-------------------------+---------------+---------------+--------------------+----------+-------------------------+---------------+--------------------+--------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+\n" > "$output_file"
@@ -105,8 +109,8 @@
             # Print instance data in the table format
             printf "|%-17s|%-25s|%-15s|%-15s|%-20s|%-10s|%-25s|%-15s|%-20s|%-20s|%-30s|%-30s|%-30s|%-30s|%-30s|%-30s|\n" "$instance_id" "$instance_name" "$instance_ip" "$platform_name" "$platform_version" "$ssm_version" "$patch_baseline" "$patch_group" "$compliance_status" "$compliance_severity" "$noncompliant_critical_count" "$noncompliant_high_count" "$noncompliant_medium_count" "$noncompliant_low_count" "$noncompliant_informational_count" "$noncompliant_unspecified_count" >> "$output_file"
           done
-
-          # Display Patch Report
-          debug:
-            msg: "Patch report for account {{ account_id }}: {{ lookup('file', '/home/ec2-user/ssm/ssm_rs/patch_report_${account_id}') }}"
         done
+
+    - name: Display Patch Report
+      debug:
+        msg: "Patch report: {{ lookup('file', '/home/ec2-user/ssm/ansible/ssm_rs/patch_report') }}"
