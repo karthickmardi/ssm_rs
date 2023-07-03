@@ -1,7 +1,0 @@
-  [myhost]
-  localhost ansible_connection=local
-
-  [myhost:vars]
-  AWS_ACCESS_KEY=AKIA4JFBL3JFVBQ42MMG
-  AWS_SECRET_KEY=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
-  region=us-west-2
