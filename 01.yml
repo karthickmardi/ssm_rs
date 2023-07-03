@@ -1,3 +1,4 @@
+---
 - hosts: localhost
   gather_facts: no
   vars:
@@ -29,6 +30,6 @@
         #!/bin/bash
 
         # Get the instances with SSM patch compliance data
-        for account_id in "{{ account_ids }}"; do
+        for account_id in {{ account_ids }}; do
           echo $account_id
         done
