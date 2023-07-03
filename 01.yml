@@ -30,4 +30,5 @@
 
         # Get the instances with SSM patch compliance data
         for account_id in "{{ account_ids }}"; do
-          echo $account_ids
+          echo $account_id
+        done
