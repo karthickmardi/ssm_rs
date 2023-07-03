@@ -1,4 +1,3 @@
----
 - hosts: localhost
   gather_facts: no
   vars:
@@ -41,8 +40,6 @@
       - "219184608383"
       - "896335907500"
       - "488057793750"
-      
-      # Add more account IDs here
 
   tasks:
     - name: Assume AWS role and retrieve temporary credentials
@@ -58,7 +55,7 @@
         aws_secret_access_key: "{{ assume_role_output.stdout | from_json | json_query('Credentials.SecretAccessKey') }}"
         aws_session_token: "{{ assume_role_output.stdout | from_json | json_query('Credentials.SessionToken') }}"
 
-    - name: Get Patch Report for each account
+    - name: Get Patch Report
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
@@ -66,18 +63,12 @@
       shell: |
         #!/bin/bash
 
-        account_ids=({{ account_ids | join(' ') }})
-
-        # Iterate over each account ID
-        for account_id in "${account_ids[@]}"; do
-          echo "Processing account: $account_id"
-
-          # Get the instances with SSM patch compliance data
+        # Get the instances with SSM patch compliance data
         for account_id in "{{ account_ids }}"; do
           instance_ids=$(aws ec2 describe-instances --region "{{ region }}" --query 'Reservations[].Instances[].InstanceId' --output text --owner-id "$account_id")
 
           # Define the output file path
-          output_file="/home/ec2-user/ssm/ansible/ssm_rs/patch_report_${account_id}"
+          output_file="/home/ec2-user/ansible/ssm/ssm_rs/patch_report_${account_id}"
 
           # Print table header
           printf "+-----------------+-------------------------+---------------+---------------+--------------------+----------+-------------------------+---------------+--------------------+--------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+\n" > "$output_file"
@@ -114,4 +105,4 @@
 
     - name: Display Patch Report
       debug:
-        msg: "Patch report: {{ lookup('file', '/home/ec2-user/ssm/ansible/ssm_rs/patch_report') }}"
+        msg: "Patch report: {{ lookup('file', '/home/ec2-user/ansible/ssm/ssm_rs/patch_report') }}"
