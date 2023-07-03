@@ -73,7 +73,8 @@
           echo "Processing account: $account_id"
 
           # Get the instances with SSM patch compliance data
-          instance_ids=$(aws ec2 describe-instances --region "{{ region }}" --query 'Reservations[].Instances[].InstanceId' --output text --profile "$account_id")
+        for account_id in "{{ account_ids }}"; do
+          instance_ids=$(aws ec2 describe-instances --region "{{ region }}" --query 'Reservations[].Instances[].InstanceId' --output text --owner-id "$account_id")
 
           # Define the output file path
           output_file="/home/ec2-user/ssm/ansible/ssm_rs/patch_report_${account_id}"
