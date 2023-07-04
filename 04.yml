@@ -1,7 +1,7 @@
 - hosts: localhost
   gather_facts: no
   vars:
-    region: "us-west-2"  # Change to desired region
+    region: "eu-west-1"  # Change to desired region
 
   tasks:
     - name: Assume AWS role and retrieve temporary credentials
@@ -69,4 +69,4 @@
 
     - name: Display Patch Report
       debug:
-        msg: "Patch report: {{ lookup('file', './patch_report') }}"
+        msg: "Patch report: {{ lookup('file', './patch_report_$owner_id') }}"
