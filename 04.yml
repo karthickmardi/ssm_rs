@@ -25,6 +25,15 @@
       loop:
       - "974553378902"
       - "797893049957"
+      - "714949071610"
+      - "442868247538"
+      - "031673727321"
+      - "31617398730"
+      - "031617398730"
+      - "31673727321"
+      - "166298870680"
+      - "483719991250"
+      - "732731544555"
       shell: |
         #!/bin/bash
 
@@ -67,6 +76,6 @@
           printf "|%-17s|%-25s|%-15s|%-15s|%-20s|%-10s|%-25s|%-15s|%-20s|%-20s|%-30s|%-30s|%-30s|%-30s|%-30s|%-30s|\n" "$instance_id" "$instance_name" "$instance_ip" "$platform_name" "$platform_version" "$ssm_version" "$patch_baseline" "$patch_group" "$compliance_status" "$compliance_severity" "$noncompliant_critical_count" "$noncompliant_high_count" "$noncompliant_medium_count" "$noncompliant_low_count" "$noncompliant_informational_count" "$noncompliant_unspecified_count" >> "$output_file"
         done
 
-    - name: Display Patch Report
-      debug:
-        msg: "Patch report: {{ lookup('file', './patch_report_*') }}"
+    # - name: Display Patch Report
+    #   debug:
+    #     msg: "Patch report: {{ lookup('file', './patch_report_*') }}"
