@@ -23,6 +23,7 @@
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
         AWS_SESSION_TOKEN: "{{ aws_session_token }}"
       loop:
+      - "673443487762"
       - "714949071610"
       - "974553378902"
       - "442868247538"
