@@ -20,4 +20,7 @@ aws_session_token=$(echo $credentials | jq -r .Credentials.SessionToken)
 owner_id=["580154993495"]
 
 # List EC2 instances in the other account
-AWS_ACCESS_KEY_ID=$aws_access_key_id AWS_SECRET_ACCESS_KEY=$aws_secret_access_key AWS_SESSION_TOKEN=$aws_session_token aws ec2 describe-instances --filters Name=owner-id,Values=$owner_id --query 'Reservations[*].Instances[*].InstanceId' --output text --region $region
+ec2_output=$(AWS_ACCESS_KEY_ID=$aws_access_key_id AWS_SECRET_ACCESS_KEY=$aws_secret_access_key AWS_SESSION_TOKEN=$aws_session_token aws ec2 describe-instances --filters Name=owner-id,Values=$owner_id --query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`].Value[]]' --output text --region $region)
+
+# Print output
+echo "$ec2_output"
