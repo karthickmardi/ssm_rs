@@ -1,0 +1,107 @@
+- hosts: localhost
+  gather_facts: no
+  vars:
+    region: "eu-west-1"  # Change to desired region
+
+  tasks:
+    - name: Assume AWS role and retrieve temporary credentials
+      loop:
+      - "673443487762"
+      - "714949071610"
+      - "974553378902"
+      - "442868247538"
+      - "170447404153"
+      - "031673727321"
+      - "31617398730"
+      - "031617398730"
+      - "31673727321"
+      - "169046219868"
+      - "31617398730"
+      - "937063455937"
+      - "166298870680"
+      - "483719991250"
+      - "732731544555"
+      - "652663885333"
+      - "693712092035"
+      - "580154993495"
+      - "937063455937"
+      - "604461992924"
+      - "268474242392"
+      - "685322773649"
+      - "285019557821"
+      - "735591518475"
+      - "219184608383"
+      - "017106239768"
+      - "812909588178"
+      - "797893049957"
+      - "795426212312"
+      - "031673727321"
+      - "31617398730"
+      - "169046219868"
+      - "795426212312"
+      - "812909588178"
+      - "735591518475"
+      - "219184608383"
+      - "896335907500"
+      - "488057793750"
+      command: >
+  
+        aws sts assume-role
+        --role-arn 'arn:aws:iam::"{{item}}":role/TechMCrossAccountAutomation'
+        --role-session-name 'test'
+      register: assume_role_output
+
+    - name: Save temporary credentials as facts
+      set_fact:
+        aws_access_key: "{{ assume_role_output.stdout | from_json | json_query('Credentials.AccessKeyId') }}"
+        aws_secret_access_key: "{{ assume_role_output.stdout | from_json | json_query('Credentials.SecretAccessKey') }}"
+        aws_session_token: "{{ assume_role_output.stdout | from_json | json_query('Credentials.SessionToken') }}"
+
+    - name: Get Patch Report
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_access_key }}"
+        AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+      shell: |
+        #!/bin/bash       
+        # Get the instances with SSM patch compliance data
+        instance_ids=$(aws ec2 describe-instances --region "{{ region }}" --query 'Reservations[].Instances[].InstanceId' --output text)
+
+        # Define the output file path
+        output_file="./patch_report_$owner_id"
+
+        # Print table header
+        printf "+-----------------+-------------------------+---------------+---------------+--------------------+----------+-------------------------+---------------+--------------------+--------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+\n" > "$output_file"
+        printf "|%-17s|%-25s|%-15s|%-15s|%-20s|%-10s|%-25s|%-15s|%-20s|%-20s|%-30s|%-30s|%-30s|%-30s|%-30s|%-30s|\n" "Instance ID" "Instance Name" "Instance IP" "Platform Name" "Platform Version" "SSM Version" "Patch Baseline" "Patch Group" "Compliance Status" "Compliance Severity" "Noncompliant Critical Count" "Noncompliant High Count" "Noncompliant Medium Count" "Noncompliant Low Count" "Noncompliant Informational Count" "Noncompliant Unspecified Count" >> "$output_file"
+        printf "+-----------------+-------------------------+---------------+---------------+--------------------+----------+-------------------------+---------------+--------------------+--------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+---------------------------+\n" >> "$output_file"
+
+        # Iterate over each instance and retrieve data
+        for instance_id in $instance_ids; do
+          instance_name=$(aws ec2 describe-instances --region "{{ region }}" --instance-ids $instance_id --query 'Reservations[].Instances[].Tags[?Key==`Name`].Value | [0]' --output text)
+          instance_ip=$(aws ec2 describe-instances --region "{{ region }}" --instance-ids $instance_id --query 'Reservations[].Instances[].PrivateIpAddress' --output text)
+          platform_name=$(aws ec2 describe-instances --region "{{ region }}" --instance-ids $instance_id --query 'Reservations[].Instances[].PlatformDetails' --output text)
+          platform_version=$(aws ssm describe-instance-information --region "{{ region }}" --instance-information-filter-list key=InstanceIds,valueSet=$instance_id --query 'InstanceInformationList[].PlatformVersion' --output text)
+          ssm_version=$(aws ssm describe-instance-information --region "{{ region }}" --instance-information-filter-list key=InstanceIds,valueSet=$instance_id --query 'InstanceInformationList[].AgentVersion' --output text)
+          patch_baseline=$(aws ssm describe-instance-patch-states --region "{{ region }}" --instance-id $instance_id --query 'BaselineId' --output text)
+          patch_group=$(aws ssm describe-instance-patch-states --region "{{ region }}" --instance-id $instance_id --query 'PatchGroup' --output text)
+          overall_compliance=$(aws ssm describe-instance-patch-states --region "{{ region }}" --instance-id $instance_id --query 'InstancePatchStates[0].OverallComplianceStatus' --output text)
+          if [[ $overall_compliance == "COMPLIANT" ]]; then
+            compliance_status="Compliant"
+          else
+            compliance_status="Non-Compliant"
+          fi
+          compliance_severity=$(aws ssm describe-instance-patch-states --region "{{ region }}" --instance-id $instance_id --query 'InstancePatchStates[0].ComplianceData.PatchSeverity' --output text)
+          noncompliant_critical_count=$(aws ssm describe-instance-patch-states --region "{{ region }}" --instance-id $instance_id --query 'InstancePatchStates[0].NonCompliantCriticalCount' --output text)
+          noncompliant_high_count=$(aws ssm describe-instance-patch-states --region "{{ region }}" --instance-id $instance_id --query 'InstancePatchStates[0].NonCompliantHighCount' --output text)
+          noncompliant_medium_count=$(aws ssm describe-instance-patch-states --region "{{ region }}" --instance-id $instance_id --query 'InstancePatchStates[0].NonCompliantMediumCount' --output text)
+          noncompliant_low_count=$(aws ssm describe-instance-patch-states --region "{{ region }}" --instance-id $instance_id --query 'InstancePatchStates[0].NonCompliantLowCount' --output text)
+          noncompliant_informational_count=$(aws ssm describe-instance-patch-states --region "{{ region }}" --instance-id $instance_id --query 'InstancePatchStates[0].NonCompliantInformationalCount' --output text)
+          noncompliant_unspecified_count=$(aws ssm describe-instance-patch-states --region "{{ region }}" --instance-id $instance_id --query 'InstancePatchStates[0].NonCompliantUnspecifiedCount' --output text)
+
+          # Print instance data in the table format
+          printf "|%-17s|%-25s|%-15s|%-15s|%-20s|%-10s|%-25s|%-15s|%-20s|%-20s|%-30s|%-30s|%-30s|%-30s|%-30s|%-30s|\n" "$instance_id" "$instance_name" "$instance_ip" "$platform_name" "$platform_version" "$ssm_version" "$patch_baseline" "$patch_group" "$compliance_status" "$compliance_severity" "$noncompliant_critical_count" "$noncompliant_high_count" "$noncompliant_medium_count" "$noncompliant_low_count" "$noncompliant_informational_count" "$noncompliant_unspecified_count" >> "$output_file"
+        done
+
+    # - name: Display Patch Report
+    #   debug:
+    #     msg: "Patch report: {{ lookup('file', './patch_report_*') }}"
